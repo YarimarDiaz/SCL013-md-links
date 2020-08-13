@@ -29,29 +29,6 @@ let filesMDLinks = []; //Array para guardar la inf (URL, Text, File)
 let ok = 0;
 let broken = 0;
 
-// Extrae lo link de cada archivo recibido
-const processLinks = (files) => {
-  files.forEach((element) => {
-    fs.readFile(element, "utf-8", (e, file) => {
-      if (e) {
-        console.error(e);
-      } else {
-        const linksFound = file.match(regEx);
-         const textLinks = file.match(expectMDLink).map((v) => v.split("](")[0].slice(1));
-        linksFound.forEach((link, i) =>
-          filesMDLinks.push({
-            href: link,
-            text: textLinks[i],
-            file: element,
-          })
-        );
-        console.log(`Links encontrados en directorio ${element}`, filesMDLinks);
-        filesMDLinks = [];
-        //console.log(`links encontrados en ${element}`, linksFound);
-      }
-    });
-  });
-};
 
 // Coincide con los nombres de archivo con una extensión .md y excluye los dir node_modules
 const mdLinks = (route) => {
@@ -110,13 +87,36 @@ mdLinks(ruta)
   .catch((error) => {
     //console.log(error);
   });
-  
+
+  const processLinks = (files) => {
+    files.forEach((element) => {
+      fs.readFile(element, "utf-8", (e, file) => {
+        if (e) {
+          console.error(e);
+        } else {
+          const linksFound = file.match(regEx);
+           const textLinks = file
+            .match(expectMDLink)
+            .map((v) => v.split("](")[0].slice(1));
+          linksFound.forEach((link, i) =>
+            filesMDLinks.push({
+              href: link,
+              text: textLinks[i],
+              file: element,
+            })
+          );
+          console.log(`Links encontrados en directorio ${element}`, filesMDLinks);
+          filesMDLinks = [];
+          //console.log(`links encontrados en ${element}`, linksFound);
+        }
+      });
+    });
+  };
+
 const validateLinks = (files) => {
   files.forEach((element) => {
     fs.readFile(element, "utf8", (err, data) => {
       let statusLinks = data.match(regEx);
-      let  textLinks = data.match(expectMDLink)
-          .map((v) => v.split("](")[0].slice(1));
       for (let i = 0; i < statusLinks.length; i++) {
         fetch(statusLinks[i])
           .then((response) => {
@@ -126,8 +126,8 @@ const validateLinks = (files) => {
               ); else
               console.log(
                 ` File: ${element}\n Link: ${statusLinks[i]}\n ${ chalk.red (' ✖ ' + response.status)}\n`
-              );            
-              return response;
+              );
+            return response;
           })
           .catch((error) => {
             console.log(
@@ -156,7 +156,7 @@ const statsLinks = (files) => {
           .then(() => {
             if (ok + broken === statusLinks.length)
               console.log(
-                `${ chalk.green ('  ✔ Total :' + statusLinks.length)}\n  ${ chalk.blue ('✔ Unique :' + ok)}`
+                `${ chalk.green ('  ✔ Total :' + statusLinks.length)}\n  ${ chalk.blue ('✔ Unique :' + ok)}\n  ${ chalk.red ('✖ Broken :' + broken)}`
               );
           });
       }
